@@ -110,11 +110,60 @@ function createLight(scene, color, force) {
     return pointLight;
 }
 
+/* Класс дерева */
+class Tree {
+    constructor(scene,radius,height,x,y,z){
+        this.radius = radius;
+        this.height = height;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        /* Создание ствола дерева */
+        let cylinder = createCylinder(scene,radius,height,"#300000",10);
+        cylinder.position.x = x;
+        cylinder.position.y = height/2;
+        cylinder.position.z = z;
+        /* Создание 1 части кроны дерева */
+        let cone1 = createCone(scene,radius*2,height/1.5,"#003300",10)
+        cone1.position.x = x;
+        cone1.position.y = height/2+height/2;
+        cone1.position.z = z;
+        /* Создание 2 части кроны дерева */
+        let cone2 = createCone(scene,radius*2,height/1.5,"#003300",10)
+        cone2.position.x = x;
+        cone2.position.y = height+height/1.5/2;
+        cone2.position.z = z;
+    }
+}
+
+/* Класс дома */
+class House {
+    constructor(scene,width,height,length,x,y,z,color){
+        this.width = width;
+        this.height = height;
+        this.length = length;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        /* Угол между положительной осью ординат и центром дома с учётом квадранта (Чтобы дверь дома была направлена на центральную башню) */
+        this.rotationY = Math.atan2(x,z) + Math.PI;
+        /* Создание куба дома */
+        createCube(scene,width,height,length,color,x,y,z,this.rotationY,0,0);
+        createCube(scene,width/2,height*0.75,1,"#300000",x+(width+1)/2*Math.sin(this.rotationY),y-height*0.05/2,z+(width+1)/2*Math.cos(this.rotationY),this.rotationY,0,0);
+        createCube(scene,width/1.5,height*0.1,3,"#222222",x+(width+3)/2*Math.sin(this.rotationY),y-height*0.9/2,z+(width+3)/2*Math.cos(this.rotationY),this.rotationY,0,0);
+        /* Создание крыши дома */
+        let cone = createCone(scene, width*Math.sqrt(2)/2*1.5, height, color, 4);// радиус описанной окружности равен width*Math.sqrt(2)/2*1.5 т.к. необходимо создать радиус окружности, описанной вокруг основания пирамиды, равный радиусу окружности, вписанной в грань куба
+        cone.position.x=x;
+        cone.position.y=y+10;
+        cone.position.z=z;
+        cone.rotation.y = this.rotationY + Math.PI/4;// + Math.PI/4 из-за особенностей созданного конуса с четырьмя сегментами
+    }
+}
+
 /* Функция для создания башни замка */
-function createTower(scene,height,width,length,x,y,z,rotation,color,segments){
-
+function createTower(scene,width,height,length,x,y,z,rotation,color,segments){
+    /* Создание куба башни */
     towerCubes[towerCounter]=createCube(scene,width,height,length,color);
-
     /* Создание максимально широкой надстройки башни */
     if(length<=width){
         towerCylinders[towerCounter]=createCylinder(scene,length/2-2,height/4,color,segments);
@@ -123,7 +172,6 @@ function createTower(scene,height,width,length,x,y,z,rotation,color,segments){
         towerCylinders[towerCounter]=createCylinder(scene,width/2-2,height/4,color,segments);
         towerCones[towerCounter]=createCone(scene,width/2-2,height,color,segments);
     }
-
     /* Добавление данных о кубе башни в массивы */
     towerCubes[towerCounter].position.x=x;
     towerCubes[towerCounter].position.y=y+height/2;
@@ -281,7 +329,7 @@ window.onload = function() {
     let ground = createCube(scene, 700, 1, 700, "#00AA00");
     // Определение значения позиции куба (земли)
     ground.position.x = 0;
-    ground.position.y = -0.0;
+    ground.position.y = 0;
     ground.position.z = 0;
 
     // Создание Солнца
@@ -304,6 +352,51 @@ window.onload = function() {
     scene.add(dragon);
     dragon.position.y=10;
 
+    /* Создание векторов позиций домов */
+    let housesPosition = [
+        new THREE.Vector3(-70,5,-70),
+        new THREE.Vector3(-120,5,-30),
+        new THREE.Vector3(-110,5,10),
+        new THREE.Vector3(-150,5,20),   
+        new THREE.Vector3(-70,5,50),
+        new THREE.Vector3(-150,5,70),
+        new THREE.Vector3(-100,5,100),
+        new THREE.Vector3(-40,5,80),
+        new THREE.Vector3(-50,5,120),
+        new THREE.Vector3(0,5,100),
+        new THREE.Vector3(20,5,150),
+        new THREE.Vector3(40,5,120),
+        new THREE.Vector3(80,5,60),
+        new THREE.Vector3(100,5,20),
+        new THREE.Vector3(140,5,40),
+        new THREE.Vector3(150,5,-20),
+        new THREE.Vector3(100,5,-40),
+        new THREE.Vector3(100,5,-100),
+        new THREE.Vector3(150,5,-80),
+        new THREE.Vector3(150,5,-20),
+        new THREE.Vector3(150,5,-130),
+        new THREE.Vector3(80,5,-150),
+        new THREE.Vector3(60,5,-100),
+        new THREE.Vector3(40,5,-140),
+        new THREE.Vector3(100,25,100)
+    ];
+    /* Создание массива домов */
+    let houses = [];
+    for(let i = 0; i < housesPosition.length; i++)
+        houses[i] = new House(scene,10,10,10,housesPosition[i].x,housesPosition[i].y,housesPosition[i].z,"#FF0000");
+
+    /* Создание векторов позиций деревьев */
+    let treesPosition = [];
+    for(let i=0;i<1000;i++){
+        let treeX = Math.random()*700-350;
+        let treeZ = Math.random()*700-350;
+        if(Math.pow((treeX-1),2)+Math.pow((treeZ-1),2)>300*300){treesPosition.push(new THREE.Vector3(treeX,0,treeZ))}
+    }
+    /* Создание массива деревьев */
+    let trees = [];
+    for(let i = 0; i < treesPosition.length; i++)
+        trees[i] = new Tree(scene,1,10,treesPosition[i].x,treesPosition[i].y,treesPosition[i].z);
+
     /* Создание холмов */
     createHill(scene, 150, -200,-100,-200, "#005500", 2);
     createHill(scene, 24, 50,-12,0, "#005500", 1);
@@ -322,10 +415,10 @@ window.onload = function() {
     createHill(scene, 16, 30,-10,-50, "#005500", 1);
 
     /* Создание башен, стен между ними и мерлонов */
-    createTower(scene,20,40,60,-50,0,0,0,"#660000",8);
+    createTower(scene,40,20,60,-50,0,0,0,"#660000",8);
     createMerlon(scene,towerCubes[0].position,towerCubeWidths[0],towerCubeHeights[0],towerCubeLengths[0],towerCubes[0].rotation.y,"#660000");
 
-    createTower(scene,20,23,22,20,0,60,0,"#660000",8);
+    createTower(scene,23,20,22,20,0,60,0,"#660000",8);
     createMerlon(scene,towerCubes[1].position,towerCubeWidths[1],towerCubeHeights[1],towerCubeLengths[1],0,"#660000");
 
     createWall(scene,0,1,15,10,"#660000",8);
@@ -363,11 +456,11 @@ window.onload = function() {
     /* Создание центральной башни */
     createCube(scene,30,30,30,"#660000",0,15,0);
     createMerlon(scene,new THREE.Vector3(0,15,0),30,30,30,0,"#660000");
-    createTower(scene,50,20,20,0,0,0,0,"#660000",8,1);
+    createTower(scene,20,50,20,0,0,0,0,"#660000",8,1);
     createMerlon(scene,towerCubes[6].position,towerCubeWidths[6],towerCubeHeights[6],towerCubeLengths[6],towerCubes[6].rotation.y,"#660000");
 
     /* Большая башня на большом холме */
-    createTower(scene,50,40,40,-200,30,-200,0,"#1e1b1b",8);
+    createTower(scene,40,50,40,-200,30,-200,0,"#1e1b1b",8);
     createMerlon(scene,towerCubes[7].position,towerCubeWidths[7],towerCubeHeights[7],towerCubeLengths[7],0,"#1e1b1b");
     
     // Создание группы для ворот замка
@@ -381,9 +474,9 @@ window.onload = function() {
     doors.rotation.y=2;
     /* Создание остальных ворот замка */
     gates.add(createCube(scene,25,5,20,"#660000",0,0,0));
-    gates.add(createCube(scene,7,5,20,"#660000",-12,-2,0,0,0,1));
-    gates.add(createCube(scene,7,5,20,"#660000",12,-2,0,0,0,-1));
-    gates.add(createCube(scene,12.5,20,3,"#300000",6.25,-10,0,0,0,0));
+    gates.add(createCube(scene,7,5,20,"#660000",-12,-2,0,0,0,(45/180*Math.PI)));
+    gates.add(createCube(scene,7,5,20,"#660000",12,-2,0,0,0,(-45/180*Math.PI)));
+    gates.add(createCube(scene,12.5,15,3,"#300000",6.25,-10,0,0,0,0));
     gates.position.x=0;
     gates.position.y=17.5;
     gates.position.z=-70;
@@ -425,52 +518,53 @@ let mult=2;// Мультипликатор скорости движения к�
 let sunAngle=0;
 /* Анимация мира */
     setInterval(function() {
-            camera.rotation.x+=Math.PI/10000*Math.pow((screenHeight/2-mouseY)/120,5);// вращение камеры с помощью мыши относительно внутренней оси X
-            camera.rotation.y+=Math.PI/10000*Math.pow((screenWidth/2-mouseX)/120/screenWidth*screenHeight,5);// вращение камеры с помощью мыши относительно внутренней оси Y
 
-            renderer.render(scene, camera);
+        camera.rotation.x+=Math.PI/10000*Math.pow((screenHeight/2-mouseY)/120,5);// вращение камеры с помощью мыши относительно внутренней оси X
+        camera.rotation.y+=Math.PI/10000*Math.pow((screenWidth/2-mouseX)/120/screenWidth*screenHeight,5);// вращение камеры с помощью мыши относительно внутренней оси Y
+        if(camera.rotation.x > Math.PI/2)camera.rotation.x = Math.PI/2;
+        if(camera.rotation.x < -Math.PI/2)camera.rotation.x = -Math.PI/2;
+        renderer.render(scene, camera);
             
-            /* Источник света рядом с камерой */
-            
-            q1.position.x = camera.position.x;
-            q1.position.y = camera.position.y;
-            q1.position.z = camera.position.z;
+        /* Источник света рядом с камерой */
+        q1.position.x = camera.position.x;
+        q1.position.y = camera.position.y;
+        q1.position.z = camera.position.z;
 
-            /* Движение камеры учитывая вращение камеры относительно внутренней оси Y */
-            if(w){
-                camera.position.x-=1*mult*Math.sin(camera.rotation.y);
-                camera.position.z-=1*mult*Math.cos(camera.rotation.y);
-            }
-            if(a){
-                camera.position.x-=1*mult*Math.cos(camera.rotation.y);
-                camera.position.z+=1*mult*Math.sin(camera.rotation.y);
-            }
-            if(s){
-                camera.position.x+=1*mult*Math.sin(camera.rotation.y);
-                camera.position.z+=1*mult*Math.cos(camera.rotation.y);
-            }
-            if(d){
-                camera.position.x+=1*mult*Math.cos(camera.rotation.y);
-                camera.position.z-=1*mult*Math.sin(camera.rotation.y);
-            }
-            /* Движение камеры вверх/вниз НЕ учитывая вращение камеры относительно внутренней оси Y*/
-            if(bsp)camera.position.y+=1*mult;
-            if(sft)camera.position.y-=1*mult;
+        /* Движение камеры учитывая вращение камеры относительно внутренней оси Y */
+        if(w){
+            camera.position.x-=1*mult*Math.sin(camera.rotation.y);
+            camera.position.z-=1*mult*Math.cos(camera.rotation.y);
+        }
+        if(a){
+            camera.position.x-=1*mult*Math.cos(camera.rotation.y);
+            camera.position.z+=1*mult*Math.sin(camera.rotation.y);
+        }
+        if(s){
+            camera.position.x+=1*mult*Math.sin(camera.rotation.y);
+            camera.position.z+=1*mult*Math.cos(camera.rotation.y);
+        }
+        if(d){
+            camera.position.x+=1*mult*Math.cos(camera.rotation.y);
+            camera.position.z-=1*mult*Math.sin(camera.rotation.y);
+        }
+        /* Движение камеры вверх/вниз НЕ учитывая вращение камеры относительно внутренней оси Y*/
+        if(bsp)camera.position.y+=1*mult;
+        if(sft)camera.position.y-=1*mult;
 
-            /* Движение дракоши*/
-            dangle+=0.01;
-            dragon.rotation.y=dangle-Math.PI/2;
-            dragon.position.x=150*Math.sin(dangle);
-            dragon.position.z=150*Math.cos(dangle);
-            dragonAnimation(dragon);
+        /* Движение дракоши*/
+        dangle+=0.01;
+        dragon.rotation.y=dangle-Math.PI/2;
+        dragon.position.x=150*Math.sin(dangle);
+        dragon.position.z=150*Math.cos(dangle);
+        dragonAnimation(dragon);
             
-            sunAngle+=0.001;
+        sunAngle+=0.001;
+        sun.position.x=200*Math.sin(sunAngle);
+        sun.position.y=200*Math.cos(sunAngle);
+        if(sun.position.y<=0){
+            sunAngle+=0.01;
             sun.position.x=200*Math.sin(sunAngle);
             sun.position.y=200*Math.cos(sunAngle);
-            if(sun.position.y<=0){
-                sunAngle+=0.01;
-                sun.position.x=200*Math.sin(sunAngle);
-                sun.position.y=200*Math.cos(sunAngle);
-            }
+        }
     }, 30);
 }
